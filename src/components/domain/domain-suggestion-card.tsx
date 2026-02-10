@@ -33,14 +33,14 @@ export default function DomainSuggestionCard({ suggestion, submittedData }: Doma
   };
 
   const confidencePercentage = Math.round(suggestion.confidenceScore * 100);
-  const whmcsUrl = `https://clients.hordanso.net/cart.php?a=add&domain=${suggestion.domainName}`;
+  const whmcsUrl = `https://clients.hordanso.net/cart.php?a=add&domain=register&query=${suggestion.domainName}`;
   /* 
     NOTE TO INTERNS: Integrating with an external site like WHMCS must be done via URL parameters.
     Attempting to use JavaScript to manipulate the destination page (e.g., via window.onload)
     will fail due to cross-origin security policies in browsers.
 
-    The correct URL parameter for passing a domain to the WHMCS cart is typically `domain`.
-    This change updates the link to use `domain=${suggestion.domainName}` to directly
+    The correct URL parameter for passing a domain to the WHMCS cart is `query` after setting `a=add` and `domain=register`.
+    This change updates the link to use `a=add&domain=register&query=${suggestion.domainName}` to directly
     initiate the availability check and cart process for the selected domain.
   */
 
