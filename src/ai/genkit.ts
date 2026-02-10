@@ -1,5 +1,5 @@
 import {genkit} from 'genkit';
-import {ollama} from 'genkitx-ollama';
+import { ollama } from 'genkitx-ollama';
 import { config } from 'dotenv';
 
 config();
@@ -15,5 +15,5 @@ export const ai = genkit({
       },
     }),
   ],
-  model: 'ollama/llama2',
+  model: `ollama/${process.env.OLLAMA_MODEL || 'llama2'}`,
 });
