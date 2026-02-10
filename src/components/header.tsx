@@ -7,7 +7,7 @@ export default function Header() {
       <div className="mx-auto max-w-6xl">
         <Link href="/" className="flex items-center gap-2 text-foreground">
           <Logo />
-          <span className="font-headline text-xl font-bold">DomainAI Discover</span>
+          <span className="font-headline text-xl font-bold">HDS DomainAI Discover</span>
         </Link>
       </div>
     </header>

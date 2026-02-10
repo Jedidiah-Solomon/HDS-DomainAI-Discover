@@ -7,7 +7,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto flex justify-between items-center text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <Logo className="h-5 w-5" />
-          <p>DomainAI Discover</p>
+          <p>HDS DomainAI Discover</p>
         </div>
         <p>&copy; {currentYear}. All Rights Reserved.</p>
       </div>

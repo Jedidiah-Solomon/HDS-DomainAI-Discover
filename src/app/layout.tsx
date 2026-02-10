@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: 'DomainAI Discover',
+  title: 'HDS DomainAI Discover',
   description: 'AI-powered domain discovery for your next big idea.',
 };
 
@@ -16,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
+        <link rel="icon" href="https://storage.googleapis.com/msgsndr/XQll7W2eMGvCdzaiONJZ/media/697df87af7a8774460a15ee6.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

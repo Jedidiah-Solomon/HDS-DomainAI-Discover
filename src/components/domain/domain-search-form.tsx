@@ -35,7 +35,9 @@ export const DomainSuggestionInputSchema = z.object({
   keywords: z.string().min(2, {
     message: 'Please provide at least one keyword or idea.',
   }),
-  preferredTLDs: z.string().optional(),
+  preferredTLDs: z.string().min(1, {
+    message: 'Please provide at least one preferred TLD.',
+  }),
 });
 
 type FormDataType = z.infer<typeof DomainSuggestionInputSchema>;
@@ -161,7 +163,7 @@ export default function DomainSearchForm({ onSubmit, loading }: DomainSearchForm
           name="preferredTLDs"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Preferred TLDs (optional)</FormLabel>
+              <FormLabel>Preferred TLDs</FormLabel>
               <FormControl>
                 <Input placeholder="e.g., .com, .ai, .io" {...field} />
               </FormControl>
