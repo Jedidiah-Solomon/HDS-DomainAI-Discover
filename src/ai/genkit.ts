@@ -1,7 +1,19 @@
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/google-genai';
+import {ollama} from 'genkitx-ollama';
+import { config } from 'dotenv';
+
+config();
 
 export const ai = genkit({
-  plugins: [googleAI()],
-  model: 'googleai/gemini-2.5-flash',
+  plugins: [
+    ollama({
+      serverAddress: process.env.OLLAMA_BASE_URL,
+      defaultOptions: {
+        requestHeaders: {
+          'Authorization': `Bearer ${process.env.OLLAMA_API_KEY}`,
+        },
+      },
+    }),
+  ],
+  model: 'ollama/llama2',
 });
