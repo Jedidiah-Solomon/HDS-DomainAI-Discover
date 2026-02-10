@@ -33,13 +33,15 @@ export default function DomainSuggestionCard({ suggestion, submittedData }: Doma
   };
 
   const confidencePercentage = Math.round(suggestion.confidenceScore * 100);
-  const whmcsUrl = `https://clients.hordanso.net/cart.php?a=add&prefill=${suggestion.domainName}`;
+  const whmcsUrl = `https://clients.hordanso.net/cart.php?a=add&domain=${suggestion.domainName}`;
   /* 
-    User requested JS snippet for auto-fill and click on WHMCS page:
-    <a href="..." onclick="window.onload = function() { ... }">...</a>
-    NOTE TO INTERNS: This approach is not feasible due to cross-origin security policies in modern browsers.
-    A script on your page cannot manipulate the content of a different domain (clients.hordanso.net).
-    The 'prefill' URL parameter is the correct and intended method for this functionality.
+    NOTE TO INTERNS: Integrating with an external site like WHMCS must be done via URL parameters.
+    Attempting to use JavaScript to manipulate the destination page (e.g., via window.onload)
+    will fail due to cross-origin security policies in browsers.
+
+    The correct URL parameter for passing a domain to the WHMCS cart is typically `domain`.
+    This change updates the link to use `domain=${suggestion.domainName}` to directly
+    initiate the availability check and cart process for the selected domain.
   */
 
   return (
