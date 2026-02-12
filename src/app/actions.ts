@@ -4,17 +4,12 @@ import type {
   DomainSuggestionOutput,
   ExplainDomainSuggestionInput,
   FormDataType as DomainSuggestionInput,
-  ManusTask,
 } from '@/lib/types';
 
 // Ollama Configuration
 const OLLAMA_URL = `${process.env.OLLAMA_BASE_URL}/api/chat`;
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama2';
-
-// Manus AI Configuration
-const MANUS_API_URL = 'https://api.manus.ai/v1';
-const MANUS_API_KEY = process.env.MANUS_API_KEY;
 
 async function queryOllama(messages: any[]) {
   if (!OLLAMA_URL || !OLLAMA_API_KEY) {
@@ -82,82 +77,35 @@ Return the top 3-5 domain suggestions.`;
   }
 }
 
-export async function startManusResearchTask(data: ExplainDomainSuggestionInput): Promise<{ taskId: string }> {
-    if (!MANUS_API_KEY) {
-        throw new Error('HDS AI API key is not configured.');
-    }
-
-    const researchPrompt = `Perform a comprehensive market and trend analysis for the domain name "${data.domainSuggestion}". 
+export async function getDomainExplanation(data: ExplainDomainSuggestionInput): Promise<{ explanation: string }> {
+    const researchPrompt = `Perform a comprehensive market and trend analysis for the domain name "${data.domainSuggestion}".
 The user is considering this for a project with the following details:
 - Project/Business Name: ${data.projectOrBusinessName}
 - Niche/Project Type: ${data.businessNicheOrPersonalProjectType}
 - Target Audience/Location: ${data.targetAudienceOrLocation}
 - Keywords: ${data.keywordsOrIdeasForDomain}
 
-Your research must be deep and cover the following areas, using your web search capabilities (Google, Google Trends, social media, etc.):
+Your research must be deep and cover the following areas, using your knowledge of web search capabilities (Google, Google Trends, social media, etc.):
 1.  **Market Viability:** Is there a demand for businesses or projects in this niche? What is the competition like?
-2.  **Trend Analysis:** Using Google Trends and social media analysis, what are the current and projected trends related to the niche and keywords? Is interest growing, stable, or declining?
+2.  **Trend Analysis:** Based on general knowledge of market trends, what are the current and projected trends related to the niche and keywords? Is interest growing, stable, or declining?
 3.  **Branding & Memorability:** How strong is "${data.domainSuggestion}" from a branding perspective? Is it memorable, easy to spell, and unique?
-4.  **Audience Resonance:** Does the domain name resonate with the target audience? What is the sentiment around similar names or concepts on social media?
+4.  **Audience Resonance:** Does the domain name resonate with the target audience?
 5.  **SEO Potential:** Analyze the SEO potential. Are the keywords in the domain valuable for search ranking?
-6.  **Social Media Availability:** Check for the availability of handles matching or similar to the domain name on major platforms (Twitter/X, Instagram, Facebook).
+6.  **Social Media Availability:** Comment on the likely availability of handles matching or similar to the domain name on major platforms (Twitter/X, Instagram, Facebook).
 
-Provide a structured, detailed report with clear headings for each section. Conclude with a final recommendation (e.g., Highly Recommended, Recommended, Consider Alternatives) and a summary of why.`;
+Provide a structured, detailed report with clear headings for each section. Conclude with a final recommendation (e.g., Highly Recommended, Recommended, Consider Alternatives) and a summary of why.
+Return the result as a valid JSON object that conforms to this structure: { "explanation": "your-detailed-analysis-string" }.
+The explanation should be a single string with markdown for formatting. Do not include any text outside of the single JSON object.`;
 
     try {
-        const response = await fetch(`${MANUS_API_URL}/tasks`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'API_KEY': MANUS_API_KEY,
-            },
-            body: JSON.stringify({
-                prompt: researchPrompt,
-                agentProfile: "manus-1.6",
-                interactiveMode: false,
-            }),
-        });
-        
-        if (!response.ok) {
-            const errorBody = await response.json();
-            console.error('Manus AI Task Creation Error:', errorBody);
-            throw new Error(`HDS AI API request failed: ${errorBody.message || response.statusText}`);
-        }
-
-        const result = await response.json();
-        return { taskId: result.task_id };
-
-    } catch (e: any) {
-        console.error('Error starting HDS AI research task:', e);
-        throw new Error(e.message || 'Failed to start HDS AI research task.');
-    }
-}
-
-export async function getManusTaskStatus(taskId: string): Promise<ManusTask> {
-    if (!MANUS_API_KEY) {
-        throw new Error('HDS AI API key is not configured.');
-    }
-    
-    try {
-        const response = await fetch(`${MANUS_API_URL}/tasks/${taskId}`, {
-            method: 'GET',
-            headers: {
-                'API_KEY': MANUS_API_KEY,
-            },
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            console.error('Manus AI Get Task Error:', errorBody);
-            throw new Error(`HDS AI API request failed with status ${response.status}`);
-        }
-
-        const result = await response.json();
+        const result = await queryOllama([
+          { role: 'system', content: researchPrompt }
+        ]);
         return result;
 
-    } catch(e: any) {
-        console.error('Error fetching HDS AI task status:', e);
-        throw new Error(e.message || 'Failed to fetch HDS AI task status.');
+    } catch (e: any) {
+        console.error('Error getting domain explanation:', e);
+        throw new Error(e.message || 'Failed to get domain explanation from AI.');
     }
 }
 

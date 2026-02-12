@@ -15,7 +15,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { ArrowRight, Bot } from 'lucide-react';
 import type { DomainSuggestion, FormDataType } from '@/lib/types';
-import ManusResearchDialog from './manus-research-dialog';
+import ExplanationDialog from './explanation-dialog';
 import { logDomainRegistration } from '@/app/actions';
 
 interface DomainSuggestionCardProps {
@@ -53,7 +53,7 @@ export default function DomainSuggestionCard({ suggestion, submittedData }: Doma
         <CardFooter className="flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setIsDialogOpen(true)}>
             <Bot className="mr-2 h-4 w-4" />
-            Research with HDS AI
+            Analyze with AI
           </Button>
           <Button asChild onClick={handleRegisterClick} className="bg-accent hover:bg-accent/90 text-accent-foreground">
             <Link href={whmcsUrl} target="_blank">
@@ -63,7 +63,7 @@ export default function DomainSuggestionCard({ suggestion, submittedData }: Doma
           </Button>
         </CardFooter>
       </Card>
-      <ManusResearchDialog
+      <ExplanationDialog
         isOpen={isDialogOpen}
         setIsOpen={setIsDialogOpen}
         suggestion={suggestion}

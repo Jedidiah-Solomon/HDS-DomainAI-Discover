@@ -24,18 +24,3 @@ export type ExplainDomainSuggestionInput = {
     targetAudienceOrLocation: string;
     keywordsOrIdeasForDomain: string;
 };
-
-// --- Manus AI Types ---
-
-export type ManusTask = {
-    id: string;
-    status: 'pending' | 'running' | 'completed' | 'failed';
-    error?: string;
-    output?: {
-        id: string;
-        role: 'user' | 'assistant';
-        content: {
-            text?: string;
-        }[];
-    }[];
-}
