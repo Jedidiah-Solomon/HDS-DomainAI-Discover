@@ -20,11 +20,8 @@ async function queryOllama(messages: any[], format: 'json' | 'text' = 'json') {
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    'x-api-key': OLLAMA_API_KEY,
   };
-
-  if (OLLAMA_API_KEY) {
-    headers['x-api-key'] = OLLAMA_API_KEY;
-  }
 
   const body: any = {
       model: OLLAMA_MODEL,
@@ -49,15 +46,33 @@ async function queryOllama(messages: any[], format: 'json' | 'text' = 'json') {
   }
 
   const data = await response.json();
-  const content = data.message?.content;
+  // The response structure can vary. Standard /api/chat is `data.message.content`.
+  // Standard /api/generate is `data.response`. Let's check for both.
+  const content = data.message?.content || data.response;
 
   if (!content) {
-    throw new Error('No content returned from the AI.');
+    console.error('Ollama response did not contain expected content:', data);
+    throw new Error('An unexpected response was received from the server.');
   }
   
   if (format === 'json') {
-    // The content is a JSON string, so we parse it.
-    return JSON.parse(content);
+    try {
+      // The content is expected to be a JSON string.
+      return JSON.parse(content);
+    } catch (e) {
+        console.warn("Failed to parse JSON directly from Ollama response, trying to extract from markdown.", content);
+        // If direct parsing fails, the model might have wrapped the JSON in markdown.
+        const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
+        if (jsonMatch && jsonMatch[1]) {
+            try {
+                return JSON.parse(jsonMatch[1]);
+            } catch (e2) {
+                console.error("Failed to parse extracted JSON from Ollama markdown:", jsonMatch[1]);
+                throw new Error("AI returned invalid JSON, even after extraction from markdown.");
+            }
+        }
+        throw new Error("AI returned invalid JSON.");
+    }
   }
   return content; // Return raw text content
 }
