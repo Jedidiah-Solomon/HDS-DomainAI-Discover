@@ -1,12 +1,14 @@
 import {genkit} from 'genkit';
-import { ollama } from 'genkitx-ollama';
 import { config } from 'dotenv';
 
 config();
 
+// Force CommonJS require to resolve module loading issues with this specific plugin.
+const ollamaPlugin = require('genkitx-ollama');
+
 export const ai = genkit({
   plugins: [
-    ollama({
+    ollamaPlugin.ollama({
       serverAddress: process.env.OLLAMA_BASE_URL,
       defaultOptions: {
         requestHeaders: {
