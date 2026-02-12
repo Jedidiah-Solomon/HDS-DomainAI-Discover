@@ -9,10 +9,10 @@ import type {
 } from '@/lib/types';
 
 // Ollama Configuration
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+const OLLAMA_BASE_URL = 'https://ollama.withhordanso.com';
 const OLLAMA_URL = `${OLLAMA_BASE_URL}/api/chat`;
-const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama2';
+const OLLAMA_API_KEY = 'f13a09df51ab48c63a271d0b18af8ca812347dd43a10cc50e7c4c81395f91912';
+const OLLAMA_MODEL = 'llama2';
 
 // Manus AI Configuration
 const MANUS_API_URL = 'https://api.manus.ai/v1';
@@ -22,7 +22,7 @@ const MANUS_API_KEY = process.env.MANUS_API_KEY;
 async function queryOllama(messages: any[]) {
   // The base URL is now defaulted. We check if it's a valid URL format.
   if (!OLLAMA_URL.startsWith('http')) {
-    throw new Error('Ollama environment variable OLLAMA_BASE_URL is not correctly set.');
+    throw new Error('Ollama URL is not correctly set.');
   }
   
   const headers: HeadersInit = {
@@ -31,7 +31,7 @@ async function queryOllama(messages: any[]) {
 
   // Only add Authorization header if API key is provided
   if (OLLAMA_API_KEY) {
-    headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`;
+    headers['x-api-key'] = OLLAMA_API_KEY;
   }
 
   const response = await fetch(OLLAMA_URL, {
@@ -135,7 +135,19 @@ Format the response using markdown.
     throw new Error(errorMessage);
   }
 
-  return response.json();
+  const responseData = await response.json();
+  
+    // The API returns an array, we want the first element
+    if (Array.isArray(responseData) && responseData.length > 0) {
+      return responseData[0];
+    }
+  
+    // Handle cases where the response is not as expected
+    if (responseData.task_id) {
+      return responseData;
+    }
+    
+    throw new Error('Unexpected response format from HDS AI task creation.');
 }
 
 
@@ -184,6 +196,12 @@ export async function getManusResearchStatus(taskId: string): Promise<{ status: 
     ) || [];
 
     if (assistantOutputs.length === 0) {
+        // This case might mean the task completed, but there's no text output.
+        // Let's check for intermediate "thinking" steps.
+         const lastOutput = task.output?.[task.output.length - 1];
+         if (lastOutput?.role === 'assistant' && !lastOutput.content) {
+             return { status: 'completed', analysis: null, error: 'AI task completed but yielded no content.' };
+         }
         return { status: 'completed', analysis: null };
     }
 
