@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { getDomainExplanation } from '@/app/actions';
+import { startManusResearchTask, getManusResearchStatus } from '@/app/actions';
 import { Loader2, Bot, AlertTriangle } from 'lucide-react';
 import type { DomainSuggestion, FormDataType } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,7 +21,9 @@ interface ExplanationDialogProps {
   submittedData: FormDataType;
 }
 
-type ResearchStatus = 'idle' | 'loading' | 'completed' | 'failed';
+type ResearchStatus = 'idle' | 'starting' | 'polling' | 'completed' | 'failed';
+
+const POLLING_INTERVAL = 5000; // 5 seconds
 
 export default function ExplanationDialog({
   isOpen,
@@ -30,42 +32,97 @@ export default function ExplanationDialog({
   submittedData,
 }: ExplanationDialogProps) {
   const [status, setStatus] = useState<ResearchStatus>('idle');
-  const [explanation, setExplanation] = useState<string | null>(null);
+  const [pollStatus, setPollStatus] = useState<'pending' | 'running' | string>('pending');
+  const [analysis, setAnalysis] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const taskIdRef = useRef<string | null>(null);
+  const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const poll = async (taskId: string) => {
+    try {
+      const result = await getManusResearchStatus(taskId);
+      setPollStatus(result.status);
+
+      if (result.status === 'completed') {
+        if (result.analysis) {
+          setAnalysis(result.analysis);
+          setStatus('completed');
+        } else {
+          setError('No detailed analysis was returned.');
+          setStatus('failed');
+        }
+      } else if (result.status === 'failed') {
+        setError(result.error || 'Research task failed.');
+        setStatus('failed');
+      } else {
+        // If still pending or running, schedule the next poll
+        pollTimeoutRef.current = setTimeout(() => poll(taskId), POLLING_INTERVAL);
+      }
+    } catch (e: any) {
+      setError(e.message || 'An error occurred while polling for results.');
+      setStatus('failed');
+    }
+  };
+
+  useEffect(() => {
+    // Cleanup timeout on unmount or when dialog closes
+    return () => {
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
-      setStatus('loading');
+      // Reset state when dialog opens
+      setStatus('starting');
       setError(null);
-      setExplanation(null);
+      setAnalysis(null);
+      taskIdRef.current = null;
+      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
 
-      getDomainExplanation({
+      startManusResearchTask({
         domainSuggestion: suggestion.domainName,
         projectOrBusinessName: submittedData.projectName,
         businessNicheOrPersonalProjectType: submittedData.businessNiche,
         targetAudienceOrLocation: submittedData.targetAudience,
         keywordsOrIdeasForDomain: submittedData.keywords,
       })
-      .then(({ explanation }) => {
-        setExplanation(explanation);
-        setStatus('completed');
+      .then((task) => {
+        taskIdRef.current = task.task_id;
+        setStatus('polling');
+        // Start polling immediately
+        poll(task.task_id);
       })
       .catch((e: Error) => {
         setStatus('failed');
-        setError(e.message || 'An error occurred while fetching the explanation.');
+        setError(e.message || 'An error occurred while starting the research task.');
       });
     } else {
+        // When dialog closes, stop polling and reset
+        if (pollTimeoutRef.current) {
+            clearTimeout(pollTimeoutRef.current);
+        }
         setStatus('idle');
     }
   }, [isOpen, suggestion.domainName, submittedData]);
 
   const renderContent = () => {
     switch (status) {
-      case 'loading':
+      case 'starting':
         return (
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="mt-4 text-muted-foreground">Analyzing domain... This may take a moment.</p>
+            <p className="mt-4 text-muted-foreground">Initializing research task...</p>
+          </div>
+        );
+      case 'polling':
+        return (
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="mt-4 text-muted-foreground">Research in progress. Please wait, this may take a minute.</p>
+            <p className="mt-2 text-sm text-muted-foreground/80">Current status: {pollStatus}</p>
           </div>
         );
       case 'completed':
@@ -73,7 +130,7 @@ export default function ExplanationDialog({
             <div
             className="prose dark:prose-invert max-w-none"
             dangerouslySetInnerHTML={{
-                __html: (explanation || "No analysis was returned.")
+                __html: (analysis || "No analysis was returned.")
                 .replace(/\n/g, '<br />')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                  // Basic markdown for lists
@@ -87,7 +144,7 @@ export default function ExplanationDialog({
           <div className="text-destructive-foreground bg-destructive/80 p-4 rounded-md flex items-start gap-4">
             <AlertTriangle className="h-6 w-6 mt-1" />
             <div>
-                <p className="font-bold">Analysis Failed</p>
+                <p className="font-bold">Research Task Failed</p>
                 <p className="text-sm">{error}</p>
             </div>
           </div>
@@ -103,10 +160,10 @@ export default function ExplanationDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
             <Bot className="w-6 h-6 text-primary" />
-            AI Analysis: {suggestion.domainName}
+            HDS AI Research: {suggestion.domainName}
           </DialogTitle>
           <DialogDescription>
-            Detailed analysis powered by your local AI.
+            Deep market and trend analysis powered by HDS AI.
           </DialogDescription>
         </DialogHeader>
         <Separator />

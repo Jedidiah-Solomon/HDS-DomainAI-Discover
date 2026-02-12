@@ -4,12 +4,19 @@ import type {
   DomainSuggestionOutput,
   ExplainDomainSuggestionInput,
   FormDataType as DomainSuggestionInput,
+  ManusTaskStartResponse,
+  ManusTaskStatus,
 } from '@/lib/types';
 
 // Ollama Configuration
 const OLLAMA_URL = `${process.env.OLLAMA_BASE_URL}/api/chat`;
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama2';
+
+// Manus AI Configuration
+const MANUS_API_URL = 'https://api.manus.ai/v1';
+const MANUS_API_KEY = process.env.MANUS_API_KEY;
+
 
 async function queryOllama(messages: any[]) {
   if (!OLLAMA_URL || !OLLAMA_API_KEY) {
@@ -77,8 +84,12 @@ Return the top 3-5 domain suggestions.`;
   }
 }
 
-export async function getDomainExplanation(data: ExplainDomainSuggestionInput): Promise<{ explanation: string }> {
-    const researchPrompt = `Perform a comprehensive market and trend analysis for the domain name "${data.domainSuggestion}".
+export async function startManusResearchTask(data: ExplainDomainSuggestionInput): Promise<ManusTaskStartResponse> {
+  if (!MANUS_API_KEY) {
+    throw new Error('HDS AI API key is not configured.');
+  }
+
+  const prompt = `Perform a comprehensive market and trend analysis for the domain name "${data.domainSuggestion}".
 The user is considering this for a project with the following details:
 - Project/Business Name: ${data.projectOrBusinessName}
 - Niche/Project Type: ${data.businessNicheOrPersonalProjectType}
@@ -94,19 +105,85 @@ Your research must be deep and cover the following areas, using your knowledge o
 6.  **Social Media Availability:** Comment on the likely availability of handles matching or similar to the domain name on major platforms (Twitter/X, Instagram, Facebook).
 
 Provide a structured, detailed report with clear headings for each section. Conclude with a final recommendation (e.g., Highly Recommended, Recommended, Consider Alternatives) and a summary of why.
-Return the result as a valid JSON object that conforms to this structure: { "explanation": "your-detailed-analysis-string" }.
-The explanation should be a single string with markdown for formatting. Do not include any text outside of the single JSON object.`;
+Format the response using markdown.
+`;
 
-    try {
-        const result = await queryOllama([
-          { role: 'system', content: researchPrompt }
-        ]);
-        return result;
+  const response = await fetch(`${MANUS_API_URL}/tasks`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'API_KEY': MANUS_API_KEY,
+    },
+    body: JSON.stringify({
+      prompt: prompt,
+      agentProfile: 'manus-1.6',
+    }),
+  });
 
-    } catch (e: any) {
-        console.error('Error getting domain explanation:', e);
-        throw new Error(e.message || 'Failed to get domain explanation from AI.');
+  if (!response.ok) {
+    const errorBody = await response.json();
+    console.error('HDS AI API Error:', errorBody);
+    const errorMessage = errorBody.message || 'HDS AI API request failed';
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
+
+export async function getManusResearchStatus(taskId: string): Promise<{ status: 'pending' | 'running' | 'completed' | 'failed'; analysis: string | null; error?: string }> {
+    if (!MANUS_API_KEY) {
+        throw new Error('HDS AI API key is not configured.');
     }
+
+    const response = await fetch(`${MANUS_API_URL}/tasks/${taskId}`, {
+        method: 'GET',
+        headers: {
+            'API_KEY': MANUS_API_KEY,
+        },
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.json();
+        console.error('HDS AI API Error:', errorBody);
+        throw new Error(errorBody.message || 'Failed to get task status from HDS AI.');
+    }
+    
+    // The API returns an array with a single task object
+    const taskData: ManusTaskStatus[] = await response.json();
+    if (!taskData || taskData.length === 0) {
+        throw new Error('Invalid response from HDS AI task status endpoint.');
+    }
+    const task = taskData[0];
+
+    if (task.status === 'failed') {
+        return { status: 'failed', analysis: null, error: task.error || 'The research task failed without a specific error.' };
+    }
+
+    if (task.status !== 'completed') {
+        return { status: task.status, analysis: null };
+    }
+    
+    // Find the final assistant message with the analysis
+    const assistantOutputs = task.output?.filter(
+        (o) =>
+        o.role === 'assistant' &&
+        o.content &&
+        Array.isArray(o.content) &&
+        o.content.length > 0 &&
+        o.content[0].type === 'output_text' &&
+        o.content[0].text
+    ) || [];
+
+    if (assistantOutputs.length === 0) {
+        return { status: 'completed', analysis: null };
+    }
+
+    // The final analysis is the last message from the assistant with content.
+    const lastOutput = assistantOutputs[assistantOutputs.length - 1];
+    const analysis = lastOutput?.content?.[0]?.text ?? null;
+    
+    return { status: 'completed', analysis: analysis };
 }
 
 
