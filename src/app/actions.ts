@@ -9,7 +9,8 @@ import type {
 } from '@/lib/types';
 
 // Ollama Configuration
-const OLLAMA_URL = `${process.env.OLLAMA_BASE_URL}/api/chat`;
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+const OLLAMA_URL = `${OLLAMA_BASE_URL}/api/chat`;
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama2';
 
@@ -19,16 +20,23 @@ const MANUS_API_KEY = process.env.MANUS_API_KEY;
 
 
 async function queryOllama(messages: any[]) {
-  if (!OLLAMA_URL || !OLLAMA_API_KEY) {
-    throw new Error('Ollama environment variables (OLLAMA_BASE_URL, OLLAMA_API_KEY) are not set.');
+  // The base URL is now defaulted. We check if it's a valid URL format.
+  if (!OLLAMA_URL.startsWith('http')) {
+    throw new Error('Ollama environment variable OLLAMA_BASE_URL is not correctly set.');
+  }
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+
+  // Only add Authorization header if API key is provided
+  if (OLLAMA_API_KEY) {
+    headers['Authorization'] = `Bearer ${OLLAMA_API_KEY}`;
   }
 
   const response = await fetch(OLLAMA_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OLLAMA_API_KEY}`,
-    },
+    headers: headers,
     body: JSON.stringify({
       model: OLLAMA_MODEL,
       messages: messages,
