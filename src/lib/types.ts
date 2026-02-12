@@ -20,3 +20,12 @@ export type DomainSuggestionOutput = {
 export type ExplainDomainSuggestionOutput = {
   explanation: string;
 };
+
+// Input for the domain explanation action
+export type ExplainDomainSuggestionInput = {
+    domainSuggestion: string;
+    projectOrBusinessName: string;
+    businessNicheOrPersonalProjectType: string;
+    targetAudienceOrLocation: string;
+    keywordsOrIdeasForDomain: string;
+};
