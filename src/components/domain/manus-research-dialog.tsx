@@ -96,7 +96,7 @@ export default function ManusResearchDialog({
         return (
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="mt-4 text-muted-foreground">Initializing deep research task with Manus AI...</p>
+            <p className="mt-4 text-muted-foreground">Initializing deep research task with HDS AI...</p>
           </div>
         );
       case 'polling':
@@ -147,10 +147,10 @@ export default function ManusResearchDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-headline text-2xl">
             <Bot className="w-6 h-6 text-primary" />
-            Manus AI Research: {suggestion.domainName}
+            HDS AI Research: {suggestion.domainName}
           </DialogTitle>
           <DialogDescription>
-            Deep market and trend analysis powered by Manus AI.
+            Deep market and trend analysis powered by HDS AI.
           </DialogDescription>
         </DialogHeader>
         <Separator />

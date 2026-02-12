@@ -53,7 +53,7 @@ export default function DomainSuggestionCard({ suggestion, submittedData }: Doma
         <CardFooter className="flex justify-end gap-2">
           <Button variant="ghost" onClick={() => setIsDialogOpen(true)}>
             <Bot className="mr-2 h-4 w-4" />
-            Research with Manus AI
+            Research with HDS AI
           </Button>
           <Button asChild onClick={handleRegisterClick} className="bg-accent hover:bg-accent/90 text-accent-foreground">
             <Link href={whmcsUrl} target="_blank">

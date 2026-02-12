@@ -84,7 +84,7 @@ Return the top 3-5 domain suggestions.`;
 
 export async function startManusResearchTask(data: ExplainDomainSuggestionInput): Promise<{ taskId: string }> {
     if (!MANUS_API_KEY) {
-        throw new Error('Manus AI API key is not configured.');
+        throw new Error('HDS AI API key is not configured.');
     }
 
     const researchPrompt = `Perform a comprehensive market and trend analysis for the domain name "${data.domainSuggestion}". 
@@ -122,21 +122,21 @@ Provide a structured, detailed report with clear headings for each section. Conc
         if (!response.ok) {
             const errorBody = await response.json();
             console.error('Manus AI Task Creation Error:', errorBody);
-            throw new Error(`Manus AI API request failed: ${errorBody.message || response.statusText}`);
+            throw new Error(`HDS AI API request failed: ${errorBody.message || response.statusText}`);
         }
 
         const result = await response.json();
         return { taskId: result.task_id };
 
     } catch (e: any) {
-        console.error('Error starting Manus research task:', e);
-        throw new Error(e.message || 'Failed to start Manus AI research task.');
+        console.error('Error starting HDS AI research task:', e);
+        throw new Error(e.message || 'Failed to start HDS AI research task.');
     }
 }
 
 export async function getManusTaskStatus(taskId: string): Promise<ManusTask> {
     if (!MANUS_API_KEY) {
-        throw new Error('Manus AI API key is not configured.');
+        throw new Error('HDS AI API key is not configured.');
     }
     
     try {
@@ -150,15 +150,15 @@ export async function getManusTaskStatus(taskId: string): Promise<ManusTask> {
         if (!response.ok) {
             const errorBody = await response.text();
             console.error('Manus AI Get Task Error:', errorBody);
-            throw new Error(`Manus AI API request failed with status ${response.status}`);
+            throw new Error(`HDS AI API request failed with status ${response.status}`);
         }
 
         const result = await response.json();
         return result;
 
     } catch(e: any) {
-        console.error('Error fetching Manus task status:', e);
-        throw new Error(e.message || 'Failed to fetch Manus AI task status.');
+        console.error('Error fetching HDS AI task status:', e);
+        throw new Error(e.message || 'Failed to fetch HDS AI task status.');
     }
 }
 
