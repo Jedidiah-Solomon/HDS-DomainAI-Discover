@@ -171,7 +171,7 @@ export async function getManusResearchStatus(taskId: string): Promise<{ status: 
     
     // The API returns an array with a single task object
     const taskData: ManusTaskStatus[] = await response.json();
-    if (!taskData || taskData.length === 0) {
+    if (!Array.isArray(taskData) || taskData.length === 0) {
         throw new Error('Invalid response from HDS AI task status endpoint.');
     }
     const task = taskData[0];
