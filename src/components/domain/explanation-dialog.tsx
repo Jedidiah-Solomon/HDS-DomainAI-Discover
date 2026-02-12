@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { startManusResearchTask, getManusResearchStatus } from '@/app/actions';
+import { getDomainAnalysis } from '@/app/actions';
 import { Loader2, Bot, AlertTriangle } from 'lucide-react';
 import type { DomainSuggestion, FormDataType } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -21,9 +21,7 @@ interface ExplanationDialogProps {
   submittedData: FormDataType;
 }
 
-type ResearchStatus = 'idle' | 'starting' | 'polling' | 'completed' | 'failed';
-
-const POLLING_INTERVAL = 5000; // 5 seconds
+type ResearchStatus = 'idle' | 'loading' | 'completed' | 'failed';
 
 export default function ExplanationDialog({
   isOpen,
@@ -32,97 +30,42 @@ export default function ExplanationDialog({
   submittedData,
 }: ExplanationDialogProps) {
   const [status, setStatus] = useState<ResearchStatus>('idle');
-  const [pollStatus, setPollStatus] = useState<'pending' | 'running' | string>('pending');
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const taskIdRef = useRef<string | null>(null);
-  const pollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const poll = async (taskId: string) => {
-    try {
-      const result = await getManusResearchStatus(taskId);
-      setPollStatus(result.status);
-
-      if (result.status === 'completed') {
-        if (result.analysis) {
-          setAnalysis(result.analysis);
-          setStatus('completed');
-        } else {
-          setError('No detailed analysis was returned.');
-          setStatus('failed');
-        }
-      } else if (result.status === 'failed') {
-        setError(result.error || 'Research task failed.');
-        setStatus('failed');
-      } else {
-        // If still pending or running, schedule the next poll
-        pollTimeoutRef.current = setTimeout(() => poll(taskId), POLLING_INTERVAL);
-      }
-    } catch (e: any) {
-      setError(e.message || 'An error occurred while polling for results.');
-      setStatus('failed');
-    }
-  };
-
-  useEffect(() => {
-    // Cleanup timeout on unmount or when dialog closes
-    return () => {
-      if (pollTimeoutRef.current) {
-        clearTimeout(pollTimeoutRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (isOpen) {
-      // Reset state when dialog opens
-      setStatus('starting');
+      setStatus('loading');
       setError(null);
       setAnalysis(null);
-      taskIdRef.current = null;
-      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current);
 
-      startManusResearchTask({
+      getDomainAnalysis({
         domainSuggestion: suggestion.domainName,
         projectOrBusinessName: submittedData.projectName,
         businessNicheOrPersonalProjectType: submittedData.businessNiche,
         targetAudienceOrLocation: submittedData.targetAudience,
         keywordsOrIdeasForDomain: submittedData.keywords,
       })
-      .then((task) => {
-        taskIdRef.current = task.task_id;
-        setStatus('polling');
-        // Start polling immediately
-        poll(task.task_id);
+      .then((result) => {
+        setAnalysis(result);
+        setStatus('completed');
       })
       .catch((e: Error) => {
         setStatus('failed');
         setError(e.message || 'An error occurred while starting the research task.');
       });
     } else {
-        // When dialog closes, stop polling and reset
-        if (pollTimeoutRef.current) {
-            clearTimeout(pollTimeoutRef.current);
-        }
-        setStatus('idle');
+      setStatus('idle');
     }
   }, [isOpen, suggestion.domainName, submittedData]);
 
   const renderContent = () => {
     switch (status) {
-      case 'starting':
+      case 'loading':
         return (
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="mt-4 text-muted-foreground">Initializing research task...</p>
-          </div>
-        );
-      case 'polling':
-        return (
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="mt-4 text-muted-foreground">Research in progress. Please wait, this may take a minute.</p>
-            <p className="mt-2 text-sm text-muted-foreground/80">Current status: {pollStatus}</p>
+            <p className="mt-4 text-muted-foreground">Research in progress. Please wait, this may take a minute...</p>
           </div>
         );
       case 'completed':

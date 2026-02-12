@@ -4,8 +4,6 @@ import type {
   DomainSuggestionOutput,
   ExplainDomainSuggestionInput,
   FormDataType as DomainSuggestionInput,
-  ManusTaskStartResponse,
-  ManusTaskStatus,
 } from '@/lib/types';
 
 // Ollama Configuration
@@ -14,13 +12,8 @@ const OLLAMA_URL = `${OLLAMA_BASE_URL}/api/chat`;
 const OLLAMA_API_KEY = 'f13a09df51ab48c63a271d0b18af8ca812347dd43a10cc50e7c4c81395f91912';
 const OLLAMA_MODEL = 'llama2';
 
-// Manus AI Configuration
-const MANUS_API_URL = 'https://api.manus.ai/v1';
-const MANUS_API_KEY = process.env.MANUS_API_KEY;
 
-
-async function queryOllama(messages: any[]) {
-  // The base URL is now defaulted. We check if it's a valid URL format.
+async function queryOllama(messages: any[], format: 'json' | 'text' = 'json') {
   if (!OLLAMA_URL.startsWith('http')) {
     throw new Error('Ollama URL is not correctly set.');
   }
@@ -29,20 +22,24 @@ async function queryOllama(messages: any[]) {
     'Content-Type': 'application/json',
   };
 
-  // Only add Authorization header if API key is provided
   if (OLLAMA_API_KEY) {
     headers['x-api-key'] = OLLAMA_API_KEY;
+  }
+
+  const body: any = {
+      model: OLLAMA_MODEL,
+      messages: messages,
+      stream: false,
+  };
+
+  if (format === 'json') {
+    body.format = 'json';
   }
 
   const response = await fetch(OLLAMA_URL, {
     method: 'POST',
     headers: headers,
-    body: JSON.stringify({
-      model: OLLAMA_MODEL,
-      messages: messages,
-      stream: false,
-      format: 'json'
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -58,8 +55,11 @@ async function queryOllama(messages: any[]) {
     throw new Error('No content returned from the AI.');
   }
   
-  // The content is a JSON string, so we parse it.
-  return JSON.parse(content);
+  if (format === 'json') {
+    // The content is a JSON string, so we parse it.
+    return JSON.parse(content);
+  }
+  return content; // Return raw text content
 }
 
 export async function getDomainSuggestions(data: DomainSuggestionInput): Promise<DomainSuggestionOutput> {
@@ -84,7 +84,7 @@ Return the top 3-5 domain suggestions.`;
     const result = await queryOllama([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
-    ]);
+    ], 'json');
     return result;
   } catch (e) {
     console.error('Error in getDomainSuggestions:', e);
@@ -92,12 +92,8 @@ Return the top 3-5 domain suggestions.`;
   }
 }
 
-export async function startManusResearchTask(data: ExplainDomainSuggestionInput): Promise<ManusTaskStartResponse> {
-  if (!MANUS_API_KEY) {
-    throw new Error('HDS AI API key is not configured.');
-  }
-
-  const prompt = `Perform a comprehensive market and trend analysis for the domain name "${data.domainSuggestion}".
+export async function getDomainAnalysis(data: ExplainDomainSuggestionInput): Promise<string> {
+    const prompt = `Perform a comprehensive market and trend analysis for the domain name "${data.domainSuggestion}".
 The user is considering this for a project with the following details:
 - Project/Business Name: ${data.projectOrBusinessName}
 - Niche/Project Type: ${data.businessNicheOrPersonalProjectType}
@@ -116,100 +112,16 @@ Provide a structured, detailed report with clear headings for each section. Conc
 Format the response using markdown.
 `;
 
-  const response = await fetch(`${MANUS_API_URL}/tasks`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'API_KEY': MANUS_API_KEY,
-    },
-    body: JSON.stringify({
-      prompt: prompt,
-      agentProfile: 'manus-1.6',
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json();
-    console.error('HDS AI API Error:', errorBody);
-    const errorMessage = errorBody.message || 'HDS AI API request failed';
-    throw new Error(errorMessage);
+  try {
+    const result = await queryOllama([
+        { role: 'system', content: 'You are a market research analyst AI.' },
+        { role: 'user', content: prompt },
+    ], 'text');
+    return result;
+  } catch(e) {
+    console.error('Error in getDomainAnalysis:', e);
+    throw new Error('Failed to generate domain analysis. The AI service may be temporarily unavailable.');
   }
-
-  const responseData = await response.json();
-  
-    // The API returns an array, we want the first element
-    if (Array.isArray(responseData) && responseData.length > 0) {
-      return responseData[0];
-    }
-  
-    // Handle cases where the response is not as expected
-    if (responseData.task_id) {
-      return responseData;
-    }
-    
-    throw new Error('Unexpected response format from HDS AI task creation.');
-}
-
-
-export async function getManusResearchStatus(taskId: string): Promise<{ status: 'pending' | 'running' | 'completed' | 'failed'; analysis: string | null; error?: string }> {
-    if (!MANUS_API_KEY) {
-        throw new Error('HDS AI API key is not configured.');
-    }
-
-    const response = await fetch(`${MANUS_API_URL}/tasks/${taskId}`, {
-        method: 'GET',
-        headers: {
-            'API_KEY': MANUS_API_KEY,
-        },
-    });
-
-    if (!response.ok) {
-        const errorBody = await response.json();
-        console.error('HDS AI API Error:', errorBody);
-        throw new Error(errorBody.message || 'Failed to get task status from HDS AI.');
-    }
-    
-    // The API returns an array with a single task object
-    const taskData: ManusTaskStatus[] = await response.json();
-    if (!Array.isArray(taskData) || taskData.length === 0) {
-        throw new Error('Invalid response from HDS AI task status endpoint.');
-    }
-    const task = taskData[0];
-
-    if (task.status === 'failed') {
-        return { status: 'failed', analysis: null, error: task.error || 'The research task failed without a specific error.' };
-    }
-
-    if (task.status !== 'completed') {
-        return { status: task.status, analysis: null };
-    }
-    
-    // Find the final assistant message with the analysis
-    const assistantOutputs = task.output?.filter(
-        (o) =>
-        o.role === 'assistant' &&
-        o.content &&
-        Array.isArray(o.content) &&
-        o.content.length > 0 &&
-        o.content[0].type === 'output_text' &&
-        o.content[0].text
-    ) || [];
-
-    if (assistantOutputs.length === 0) {
-        // This case might mean the task completed, but there's no text output.
-        // Let's check for intermediate "thinking" steps.
-         const lastOutput = task.output?.[task.output.length - 1];
-         if (lastOutput?.role === 'assistant' && !lastOutput.content) {
-             return { status: 'completed', analysis: null, error: 'AI task completed but yielded no content.' };
-         }
-        return { status: 'completed', analysis: null };
-    }
-
-    // The final analysis is the last message from the assistant with content.
-    const lastOutput = assistantOutputs[assistantOutputs.length - 1];
-    const analysis = lastOutput?.content?.[0]?.text ?? null;
-    
-    return { status: 'completed', analysis: analysis };
 }
 
 
