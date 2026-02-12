@@ -16,12 +16,7 @@ export type DomainSuggestionOutput = {
   suggestions: DomainSuggestion[];
 };
 
-// Matches the output from the explainDomainSuggestion AI flow
-export type ExplainDomainSuggestionOutput = {
-  explanation: string;
-};
-
-// Input for the domain explanation action
+// Input for the domain explanation/research action
 export type ExplainDomainSuggestionInput = {
     domainSuggestion: string;
     projectOrBusinessName: string;
@@ -29,3 +24,16 @@ export type ExplainDomainSuggestionInput = {
     targetAudienceOrLocation: string;
     keywordsOrIdeasForDomain: string;
 };
+
+// --- Manus AI Types ---
+
+export type ManusTask = {
+    id: string;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    error?: string;
+    output?: {
+        content: {
+            text?: string;
+        }[];
+    }[];
+}

@@ -2,14 +2,19 @@
 
 import type {
   DomainSuggestionOutput,
-  ExplainDomainSuggestionOutput,
   ExplainDomainSuggestionInput,
   FormDataType as DomainSuggestionInput,
+  ManusTask,
 } from '@/lib/types';
 
+// Ollama Configuration
 const OLLAMA_URL = `${process.env.OLLAMA_BASE_URL}/api/chat`;
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'llama2';
+
+// Manus AI Configuration
+const MANUS_API_URL = 'https://api.manus.ai/v1';
+const MANUS_API_KEY = process.env.MANUS_API_KEY;
 
 async function queryOllama(messages: any[]) {
   if (!OLLAMA_URL || !OLLAMA_API_KEY) {
@@ -48,11 +53,7 @@ async function queryOllama(messages: any[]) {
 }
 
 export async function getDomainSuggestions(data: DomainSuggestionInput): Promise<DomainSuggestionOutput> {
-  // TODO: For interns - Here you can add logic to save user input to a CRM or database.
-  // Example: await crm.saveLead({ email: data.email, ... });
   console.log('Generating suggestions for:', data.projectName);
-
-  // Tag workflow based on user type
   const crmTag = data.userType === 'Business' ? 'business-domain' : 'personal-domain';
   console.log(`// TODO: For interns - Add tag "${crmTag}" to user in CRM.`);
   
@@ -81,45 +82,89 @@ Return the top 3-5 domain suggestions.`;
   }
 }
 
-export async function getDomainExplanation(data: ExplainDomainSuggestionInput): Promise<ExplainDomainSuggestionOutput> {
-  // TODO: For interns - Add any necessary logging or tracking for this action, e.g., tracking which domains users are most interested in.
-  const systemPrompt = `You are an AI domain name expert. Your task is to provide a detailed explanation about a domain suggestion.
-Return the result as a valid JSON object that conforms to this structure: { "explanation": "string" }.
-The explanation inside the JSON should be formatted with markdown (e.g. using '*' for bullet points).
-Do not include any text, markdown, or formatting outside of the single JSON object.`;
+export async function startManusResearchTask(data: ExplainDomainSuggestionInput): Promise<{ taskId: string }> {
+    if (!MANUS_API_KEY) {
+        throw new Error('Manus AI API key is not configured.');
+    }
 
-  const userPrompt = `A user is considering the domain name "${data.domainSuggestion}" for their project. The following information is known about the project:
+    const researchPrompt = `Perform a comprehensive market and trend analysis for the domain name "${data.domainSuggestion}". 
+The user is considering this for a project with the following details:
+- Project/Business Name: ${data.projectOrBusinessName}
+- Niche/Project Type: ${data.businessNicheOrPersonalProjectType}
+- Target Audience/Location: ${data.targetAudienceOrLocation}
+- Keywords: ${data.keywordsOrIdeasForDomain}
 
-Project or Business Name: ${data.projectOrBusinessName}
-Business Niche or Personal Project Type: ${data.businessNicheOrPersonalProjectType}
-Target Audience or Location: ${data.targetAudienceOrLocation}
-Keywords or Ideas for the Domain: ${data.keywordsOrIdeasForDomain}
+Your research must be deep and cover the following areas, using your web search capabilities (Google, Google Trends, social media, etc.):
+1.  **Market Viability:** Is there a demand for businesses or projects in this niche? What is the competition like?
+2.  **Trend Analysis:** Using Google Trends and social media analysis, what are the current and projected trends related to the niche and keywords? Is interest growing, stable, or declining?
+3.  **Branding & Memorability:** How strong is "${data.domainSuggestion}" from a branding perspective? Is it memorable, easy to spell, and unique?
+4.  **Audience Resonance:** Does the domain name resonate with the target audience? What is the sentiment around similar names or concepts on social media?
+5.  **SEO Potential:** Analyze the SEO potential. Are the keywords in the domain valuable for search ranking?
+6.  **Social Media Availability:** Check for the availability of handles matching or similar to the domain name on major platforms (Twitter/X, Instagram, Facebook).
 
-Explain in detail why "${data.domainSuggestion}" is a good domain name for this project. Your explanation should cover the following aspects:
+Provide a structured, detailed report with clear headings for each section. Conclude with a final recommendation (e.g., Highly Recommended, Recommended, Consider Alternatives) and a summary of why.`;
 
-*   Market trends and search demand
-*   Branding potential and memorability
-*   Audience relevance.
+    try {
+        const response = await fetch(`${MANUS_API_URL}/tasks`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'API_KEY': MANUS_API_KEY,
+            },
+            body: JSON.stringify({
+                prompt: researchPrompt,
+                agentProfile: "manus-1.6",
+                connectors: ["google", "google-trends"],
+                interactiveMode: false,
+            }),
+        });
+        
+        if (!response.ok) {
+            const errorBody = await response.json();
+            console.error('Manus AI Task Creation Error:', errorBody);
+            throw new Error(`Manus AI API request failed: ${errorBody.message || response.statusText}`);
+        }
 
-Focus on being informative and persuasive. Provide specific reasons and insights to help the user make an informed decision.`;
+        const result = await response.json();
+        return { taskId: result.task_id };
 
-  try {
-    const result = await queryOllama([
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-    ]);
-    return result;
-  } catch (e) {
-    console.error('Error in getDomainExplanation:', e);
-    throw new Error('Failed to get a detailed explanation. Please try again.');
-  }
+    } catch (e: any) {
+        console.error('Error starting Manus research task:', e);
+        throw new Error(e.message || 'Failed to start Manus AI research task.');
+    }
 }
+
+export async function getManusTaskStatus(taskId: string): Promise<ManusTask> {
+    if (!MANUS_API_KEY) {
+        throw new Error('Manus AI API key is not configured.');
+    }
+    
+    try {
+        const response = await fetch(`${MANUS_API_URL}/tasks/${taskId}`, {
+            method: 'GET',
+            headers: {
+                'API_KEY': MANUS_API_KEY,
+            },
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error('Manus AI Get Task Error:', errorBody);
+            throw new Error(`Manus AI API request failed with status ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result;
+
+    } catch(e: any) {
+        console.error('Error fetching Manus task status:', e);
+        throw new Error(e.message || 'Failed to fetch Manus AI task status.');
+    }
+}
+
 
 export async function logDomainRegistration(domainName: string, userType: 'Business' | 'Personal') {
   // TODO: For interns - This function should be called when a user clicks "Register".
-  // 1. Capture the user's information (if available) and the selected domain.
-  // 2. Send this information to your CRM.
-  // 3. Trigger an automated follow-up sequence (e.g., email or notification).
   console.log(`// TODO: For interns - User clicked register for "${domainName}".`);
   console.log(`// TODO: For interns - Send to CRM and trigger follow-up for ${userType} user.`);
 }
