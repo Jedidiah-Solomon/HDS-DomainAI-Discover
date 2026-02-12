@@ -32,6 +32,8 @@ export type ManusTask = {
     status: 'pending' | 'running' | 'completed' | 'failed';
     error?: string;
     output?: {
+        id: string;
+        role: 'user' | 'assistant';
         content: {
             text?: string;
         }[];

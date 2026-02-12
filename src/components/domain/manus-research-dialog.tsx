@@ -112,7 +112,8 @@ export default function ManusResearchDialog({
             </div>
         );
       case 'completed':
-        const outputText = task?.output?.[1]?.content?.[0]?.text || "No detailed analysis was returned.";
+        const assistantMessage = task?.output?.find(msg => msg.role === 'assistant');
+        const outputText = assistantMessage?.content?.[0]?.text || "No detailed analysis was returned.";
         return (
             <div
             className="prose dark:prose-invert max-w-none"
