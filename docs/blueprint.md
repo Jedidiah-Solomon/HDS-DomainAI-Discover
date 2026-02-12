@@ -1,4 +1,4 @@
-# **App Name**: DomainAI Discover
+# **App Name**: HDS DomainAI Discover
 
 ## Core Features:
 

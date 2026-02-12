@@ -114,7 +114,6 @@ Provide a structured, detailed report with clear headings for each section. Conc
             body: JSON.stringify({
                 prompt: researchPrompt,
                 agentProfile: "manus-1.6",
-                connectors: ["google", "google-trends"],
                 interactiveMode: false,
             }),
         });
