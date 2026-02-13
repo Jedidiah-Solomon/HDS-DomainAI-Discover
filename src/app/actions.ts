@@ -84,17 +84,13 @@ You MUST reply with ONLY a valid JSON object that matches this structure: { "sug
 }
 
 export async function getDomainAnalysis(data: ExplainDomainSuggestionInput): Promise<string> {
-   const prompt = `You are a market research analyst AI. Perform a comprehensive market and trend analysis for the domain name "${data.domainSuggestion}".
-The user is considering this for a project with the following details:
-- Project/Business Name: ${data.projectOrBusinessName}
-- Niche/Project Type: ${data.businessNicheOrPersonalProjectType}
-- Target Audience/Location: ${data.targetAudienceOrLocation}
-- Keywords: ${data.keywordsOrIdeasForDomain}
+   const systemPrompt = `You are a market research analyst AI. Perform a comprehensive market and trend analysis for the given domain name.
+The user is considering this for a project with specific details.
 
 Your research must be deep and cover the following areas:
 1.  **Market Viability:** Is there a demand for businesses or projects in this niche? What is the competition like?
 2.  **Trend Analysis:** Based on general knowledge of market trends, what are the current and projected trends related to the niche and keywords? Is interest growing, stable, or declining?
-3.  **Branding & Memorability:** How strong is "${data.domainSuggestion}" from a branding perspective? Is it memorable, easy to spell, and unique?
+3.  **Branding & Memorability:** How strong is the domain from a branding perspective? Is it memorable, easy to spell, and unique?
 4.  **Audience Resonance:** Does the domain name resonate with the target audience?
 5.  **SEO Potential:** Analyze the SEO potential. Are the keywords in the domain valuable for search ranking?
 6.  **Social Media Availability:** Comment on the likely availability of handles matching or similar to the domain name on major platforms (Twitter/X, Instagram, Facebook).
@@ -102,9 +98,20 @@ Your research must be deep and cover the following areas:
 Provide a structured, detailed report with clear headings for each section. Conclude with a final recommendation (e.g., Highly Recommended, Recommended, Consider Alternatives) and a summary of why.
 Format the response using markdown.
 `;
+  const userPrompt = `
+    Analyze the domain: "${data.domainSuggestion}"
+    
+    The project details are:
+    - Project/Business Name: ${data.projectOrBusinessName}
+    - Niche/Project Type: ${data.businessNicheOrPersonalProjectType}
+    - Target Audience/Location: ${data.targetAudienceOrLocation}
+    - Keywords: ${data.keywordsOrIdeasForDomain}
+  `;
+
   try {
      const response = await runOpenRouterChat([
-      { role: 'user', content: prompt },
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt },
     ], OPENROUTER_ANALYSIS_MODEL);
 
     if (response?.choices?.[0]?.message?.content) {
