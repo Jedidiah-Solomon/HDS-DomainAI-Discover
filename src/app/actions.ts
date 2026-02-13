@@ -19,7 +19,7 @@ const DomainSuggestionOutputSchema = z.object({
 
 const suggestionPrompt = ai.definePrompt({
   name: 'domainSuggestionPrompt',
-  model: 'googleai/gemini-1.5-flash-latest',
+  model: 'googleai/gemini-pro',
   input: { schema: DomainSuggestionInputSchema },
   output: { schema: DomainSuggestionOutputSchema },
   prompt: `You are an AI domain name generator. Analyze the provided project details and generate a list of domain name suggestions.
@@ -79,7 +79,7 @@ const ExplainDomainSuggestionInputSchema = z.object({
 
 const analysisPrompt = ai.definePrompt({
     name: 'domainAnalysisPrompt',
-    model: 'googleai/gemini-1.5-flash-latest',
+    model: 'googleai/gemini-pro',
     input: { schema: ExplainDomainSuggestionInputSchema },
     prompt: `You are a market research analyst AI. Perform a comprehensive market and trend analysis for the domain name "{{domainSuggestion}}".
 The user is considering this for a project with the following details:
