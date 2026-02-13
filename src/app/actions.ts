@@ -7,21 +7,24 @@ import type {
 } from '@/lib/types';
 
 // Ollama Configuration
-const OLLAMA_BASE_URL = 'https://ollama.withhordanso.com';
-const OLLAMA_URL = `${OLLAMA_BASE_URL}/api/chat`;
-const OLLAMA_API_KEY = 'f13a09df51ab48c63a271d0b18af8ca812347dd43a10cc50e7c4c81395f91912';
-const OLLAMA_MODEL = 'llama2';
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL;
+const OLLAMA_URL = OLLAMA_BASE_URL ? `${OLLAMA_BASE_URL}/api/chat` : '';
+const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL;
 
 
 async function queryOllama(messages: any[], format: 'json' | 'text' = 'json') {
   if (!OLLAMA_URL.startsWith('http')) {
-    throw new Error('Ollama URL is not correctly set.');
+    throw new Error('Ollama URL is not correctly set in environment variables.');
   }
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    'x-api-key': OLLAMA_API_KEY,
   };
+
+  if (OLLAMA_API_KEY) {
+    headers['x-api-key'] = OLLAMA_API_KEY;
+  }
 
   const body: any = {
       model: OLLAMA_MODEL,
@@ -135,7 +138,10 @@ Format the response using markdown.
     return result;
   } catch(e) {
     console.error('Error in getDomainAnalysis:', e);
-    throw new Error('Failed to generate domain analysis. The AI service may be temporarily unavailable.');
+    if (e instanceof Error) {
+        throw e;
+    }
+    throw new Error('An unexpected response was received from the server.');
   }
 }
 
