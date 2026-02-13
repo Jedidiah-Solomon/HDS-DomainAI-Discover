@@ -6,7 +6,7 @@ This is a Next.js application that uses AI to help users discover the perfect do
 
 -   **AI-Powered Domain Suggestions:** Get creative and relevant domain name ideas based on your project details.
 -   **Deep Market Analysis:** Go beyond simple suggestions with a comprehensive analysis of market viability, trends, SEO potential, and more for any domain.
--   **Powered by Google Gemini:** Leverages the power of Google's Gemini models via Genkit for fast and reliable AI capabilities.
+-   **Powered by Ollama:** Leverages a self-hosted Ollama instance for fast and reliable AI capabilities.
 
 ## Getting Started
 
@@ -14,14 +14,17 @@ This is a Next.js application that uses AI to help users discover the perfect do
 
 -   Node.js (v18 or later)
 -   npm or yarn
+-   An Ollama instance accessible via a URL.
 
 ### 1. Environment Variables
 
-First, you need to set up your environment variables. Create a file named `.env` in the root of the project and add your Google Gemini API key. You can obtain a key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+First, you need to set up your environment variables. Create a file named `.env` in the root of the project and add the connection details for your Ollama instance.
 
 ```bash
 # .env
-GEMINI_API_KEY=your-api-key-here
+OLLAMA_BASE_URL=https://ollama.withhordanso.com
+OLLAMA_API_KEY=your-ollama-api-key-here
+OLLAMA_MODEL=llama2
 ```
 
 ### 2. Installation
