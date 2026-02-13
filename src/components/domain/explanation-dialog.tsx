@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import {
   Dialog,
   DialogContent,
@@ -71,17 +73,11 @@ export default function ExplanationDialog({
         );
       case 'completed':
         return (
-            <div
-            className="prose dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{
-                __html: (analysis || "No analysis was returned.")
-                .replace(/\n/g, '<br />')
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                 // Basic markdown for lists
-                .replace(/^\* (.*$)/gm, '<li>$1</li>')
-                .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>'),
-            }}
-            />
+          <div className="prose dark:prose-invert max-w-none">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {analysis || "No analysis was returned."}
+            </ReactMarkdown>
+          </div>
         );
       case 'failed':
         return (

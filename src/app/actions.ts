@@ -86,19 +86,19 @@ You MUST reply with ONLY a valid JSON object that matches this structure: { "sug
 }
 
 export async function getDomainAnalysis(data: ExplainDomainSuggestionInput): Promise<string> {
-  const systemPrompt = `You are a market research analyst AI. Perform a comprehensive market and trend analysis for the given domain name.
-The user is considering this for a project with specific details.
+  const systemPrompt = `You are an expert market research analyst AI. Your task is to perform a comprehensive market and trend analysis for a given domain name based on project details provided by the user.
 
-Your research must be deep and cover the following areas:
-1.  **Market Viability:** Is there a demand for businesses or projects in this niche? What is the competition like?
-2.  **Trend Analysis:** Based on general knowledge of market trends, what are the current and projected trends related to the niche and keywords? Is interest growing, stable, or declining?
-3.  **Branding & Memorability:** How strong is the domain from a branding perspective? Is it memorable, easy to spell, and unique?
-4.  **Audience Resonance:** Does the domain name resonate with the target audience?
-5.  **SEO Potential:** Analyze the SEO potential. Are the keywords in the domain valuable for search ranking?
-6.  **Social Media Availability:** Comment on the likely availability of handles matching or similar to the domain name on major platforms (Twitter/X, Instagram, Facebook).
+Your analysis must be structured as a professional, in-depth report using markdown formatting. The report should be objective, well-written, and easy to read. Use clean paragraphs and avoid using emojis unless it is contextually necessary for the tone of the report.
 
-Provide a structured, detailed report with clear headings for each section. Conclude with a final recommendation (e.g., Highly Recommended, Recommended, Consider Alternatives) and a summary of why.
-Format the response using markdown.`;
+Please structure your report with the following sections, using markdown headings (e.g., ## 1. Market Viability):
+1.  **Market Viability:** Analyze the demand for businesses in this niche, the competitive landscape, and potential challenges.
+2.  **Trend Analysis:** Discuss current and projected market trends related to the niche and keywords. Is interest growing, stable, or declining?
+3.  **Branding & Memorability:** Evaluate the domain's strength from a branding perspective. Is it memorable, easy to spell, and unique?
+4.  **Audience Resonance:** Assess whether the domain name resonates with the specified target audience.
+5.  **SEO Potential:** Analyze the SEO value of the domain, including keyword strength and potential ranking challenges.
+6.  **Social Media Availability:** Comment on the likely availability of matching social media handles on major platforms.
+
+Conclude the report with a "Final Recommendation" section, providing a clear recommendation (e.g., Highly Recommended, Recommended, Consider Alternatives) and a concise summary of your reasoning.`;
   
   const userPrompt = `
 Analyze the domain: "${data.domainSuggestion}"
