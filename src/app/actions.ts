@@ -22,6 +22,7 @@ async function queryOllama(messages: any[], format: 'json' | 'text' = 'json') {
     'Content-Type': 'application/json',
   };
 
+  // Your endpoint requires an x-api-key header for authentication.
   if (OLLAMA_API_KEY) {
     headers['x-api-key'] = OLLAMA_API_KEY;
   }
@@ -31,10 +32,6 @@ async function queryOllama(messages: any[], format: 'json' | 'text' = 'json') {
       messages: messages,
       stream: false,
   };
-
-  if (format === 'json') {
-    body.format = 'json';
-  }
 
   const response = await fetch(OLLAMA_URL, {
     method: 'POST',
@@ -49,9 +46,8 @@ async function queryOllama(messages: any[], format: 'json' | 'text' = 'json') {
   }
 
   const data = await response.json();
-  // The response structure can vary. Standard /api/chat is `data.message.content`.
-  // Standard /api/generate is `data.response`. Let's check for both.
-  const content = data.message?.content || data.response;
+  // For the /api/chat endpoint, the response is in data.message.content
+  const content = data.message?.content;
 
   if (!content) {
     console.error('Ollama response did not contain expected content:', data);
@@ -60,7 +56,7 @@ async function queryOllama(messages: any[], format: 'json' | 'text' = 'json') {
   
   if (format === 'json') {
     try {
-      // The content is expected to be a JSON string.
+      // The content is expected to be a JSON string that needs to be parsed.
       return JSON.parse(content);
     } catch (e) {
         console.warn("Failed to parse JSON directly from Ollama response, trying to extract from markdown.", content);
@@ -106,6 +102,9 @@ Return the top 3-5 domain suggestions.`;
     return result;
   } catch (e) {
     console.error('Error in getDomainSuggestions:', e);
+    if (e instanceof Error) {
+        throw e;
+    }
     throw new Error('Failed to generate domain suggestions. The AI service may be temporarily unavailable.');
   }
 }
