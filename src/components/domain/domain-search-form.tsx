@@ -2,8 +2,9 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import { Loader2, Search } from 'lucide-react';
+import type { FormDataType } from '@/lib/types';
+import { DomainSuggestionInputSchema } from '@/lib/types';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -18,29 +19,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-
-export const DomainSuggestionInputSchema = z.object({
-  userType: z.enum(['Business', 'Personal'], {
-    required_error: 'You need to select a user type.',
-  }),
-  projectName: z.string().min(2, {
-    message: 'Project name must be at least 2 characters.',
-  }),
-  businessNiche: z.string().min(2, {
-    message: 'Niche or project type must be at least 2 characters.',
-  }),
-  targetAudience: z.string().min(2, {
-    message: 'Target audience must be at least 2 characters.',
-  }),
-  keywords: z.string().min(2, {
-    message: 'Please provide at least one keyword or idea.',
-  }),
-  preferredTLDs: z.string().min(1, {
-    message: 'Please provide at least one preferred TLD.',
-  }),
-});
-
-type FormDataType = z.infer<typeof DomainSuggestionInputSchema>;
 
 interface DomainSearchFormProps {
   onSubmit: (data: FormDataType) => void;
