@@ -6,7 +6,7 @@ This is a Next.js application that uses AI to help users discover the perfect do
 
 -   **AI-Powered Domain Suggestions:** Get creative and relevant domain name ideas based on your project details.
 -   **Deep Market Analysis:** Go beyond simple suggestions with a comprehensive analysis of market viability, trends, SEO potential, and more for any domain.
--   **Powered by Ollama:** Leverages a self-hosted Ollama instance for fast and reliable AI capabilities.
+-   **Powered by OpenRouter:** Leverages the OpenRouter API to access a variety of powerful large language models.
 
 ## Getting Started
 
@@ -14,17 +14,20 @@ This is a Next.js application that uses AI to help users discover the perfect do
 
 -   Node.js (v18 or later)
 -   npm or yarn
--   An Ollama instance accessible via a URL.
+-   An OpenRouter API Key.
 
 ### 1. Environment Variables
 
-First, you need to set up your environment variables. Create a file named `.env` in the root of the project and add the connection details for your Ollama instance.
+First, you need to set up your environment variables. Create a file named `.env` in the root of the project and add your OpenRouter API key. You can also customize the models used for suggestions and analysis.
 
 ```bash
 # .env
-OLLAMA_BASE_URL=https://ollama.withhordanso.com
-OLLAMA_API_KEY=your-ollama-api-key-here
-OLLAMA_MODEL=llama2
+# Get your API key from https://openrouter.ai/keys
+OPENROUTER_API_KEY="your-openrouter-api-key-here"
+
+# (Optional) Customize the models used for AI tasks
+OPENROUTER_SUGGESTION_MODEL="mistralai/mistral-7b-instruct"
+OPENROUTER_ANALYSIS_MODEL="wizardlm/wizardlm-13b-v1.2"
 ```
 
 ### 2. Installation

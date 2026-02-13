@@ -2,31 +2,40 @@
 
 import type { DomainSuggestionOutput, ExplainDomainSuggestionInput, FormDataType as DomainSuggestionInput } from '@/lib/types';
 
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL;
-const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_SUGGESTION_MODEL = process.env.OPENROUTER_SUGGESTION_MODEL || 'mistralai/mistral-7b-instruct';
+const OPENROUTER_ANALYSIS_MODEL = process.env.OPENROUTER_ANALYSIS_MODEL || 'wizardlm/wizardlm-13b-v1.2';
+const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 
-async function runOllamaChat(messages: { role: string; content: string }[]): Promise<any> {
-  if (!OLLAMA_BASE_URL || !OLLAMA_API_KEY || !OLLAMA_MODEL) {
-    throw new Error('Ollama environment variables are not configured.');
+
+async function runOpenRouterChat(messages: { role: string; content: string }[], model: string, isJson: boolean = false): Promise<any> {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error('OpenRouter API key is not configured.');
   }
 
-  const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+  const body: any = {
+    model: model,
+    messages: messages,
+  };
+
+  if (isJson) {
+    body.response_format = { type: 'json_object' };
+  }
+
+  const response = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': OLLAMA_API_KEY,
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'HTTP-Referer': 'https://hds-domainai-discover.com', // Recommended by OpenRouter
+      'X-Title': 'HDS DomainAI Discover', // Recommended by OpenRouter
     },
-    body: JSON.stringify({
-      model: OLLAMA_MODEL,
-      messages: messages,
-      stream: false,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const errorBody = await response.text();
-    console.error('Ollama API Error:', errorBody);
+    console.error('OpenRouter API Error:', errorBody);
     throw new Error(`Failed to communicate with the AI service. Status: ${response.status}`);
   }
 
@@ -52,15 +61,14 @@ You MUST reply with ONLY a valid JSON object that matches this structure: { "sug
   `;
 
   try {
-    const response = await runOllamaChat([
+    const response = await runOpenRouterChat([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
-    ]);
+    ], OPENROUTER_SUGGESTION_MODEL, true);
     
-    if (response?.message?.content) {
-      // Sometimes the model wraps the JSON in markdown, let's strip it.
-      const cleanedContent = response.message.content.replace(/```json\n|```/g, '').trim();
-      const suggestions = JSON.parse(cleanedContent);
+    if (response?.choices?.[0]?.message?.content) {
+      const content = response.choices[0].message.content;
+      const suggestions = JSON.parse(content);
       if (suggestions && suggestions.suggestions) {
         return suggestions;
       }
@@ -95,12 +103,12 @@ Provide a structured, detailed report with clear headings for each section. Conc
 Format the response using markdown.
 `;
   try {
-     const response = await runOllamaChat([
+     const response = await runOpenRouterChat([
       { role: 'user', content: prompt },
-    ]);
+    ], OPENROUTER_ANALYSIS_MODEL);
 
-    if (response?.message?.content) {
-        return response.message.content;
+    if (response?.choices?.[0]?.message?.content) {
+        return response.choices[0].message.content;
     }
 
     throw new Error('AI returned an empty analysis.');
