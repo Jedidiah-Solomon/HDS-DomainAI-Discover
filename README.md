@@ -27,7 +27,7 @@ OPENROUTER_API_KEY="your-openrouter-api-key-here"
 
 # (Optional) Customize the models used for AI tasks
 OPENROUTER_SUGGESTION_MODEL="mistralai/mistral-7b-instruct"
-OPENROUTER_ANALYSIS_MODEL="wizardlm/wizardlm-13b-v1.2"
+OPENROUTER_ANALYSIS_MODEL="anthropic/claude-instant-v1"
 ```
 
 ### 2. Installation

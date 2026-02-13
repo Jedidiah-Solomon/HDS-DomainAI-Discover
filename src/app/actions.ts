@@ -4,7 +4,7 @@ import type { DomainSuggestionOutput, ExplainDomainSuggestionInput, FormDataType
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_SUGGESTION_MODEL = process.env.OPENROUTER_SUGGESTION_MODEL || 'mistralai/mistral-7b-instruct';
-const OPENROUTER_ANALYSIS_MODEL = process.env.OPENROUTER_ANALYSIS_MODEL || 'mistralai/mistral-7b-instruct';
+const OPENROUTER_ANALYSIS_MODEL = process.env.OPENROUTER_ANALYSIS_MODEL || 'anthropic/claude-instant-v1';
 const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 
 
@@ -51,7 +51,7 @@ export async function getDomainSuggestions(data: DomainSuggestionInput): Promise
   console.log(`// TODO: For interns - Add tag "${crmTag}" to user in CRM.`);
   
   const systemPrompt = `You are an AI domain name generator. Your task is to analyze the provided project details and generate a list of 3-5 domain name suggestions.
-For each suggestion, provide the domain name, a confidence score between 0 and 1 indicating how good the suggestion is, and a brief explanation.
+For each suggestion, provide the domainName, a confidenceScore between 0 and 1 indicating how good the suggestion is, and a brief explanation.
 You MUST reply with ONLY a valid JSON object that matches this structure: { "suggestions": [{ "domainName": string, "confidenceScore": number, "explanation": string }] }. Do not include any other text, markdown, or commentary before or after the JSON object.`;
 
   const userPrompt = `
@@ -86,7 +86,8 @@ You MUST reply with ONLY a valid JSON object that matches this structure: { "sug
 }
 
 export async function getDomainAnalysis(data: ExplainDomainSuggestionInput): Promise<string> {
-   const systemPrompt = `You are a market research analyst AI. Perform a comprehensive market and trend analysis for the given domain name.
+   // Combined prompt for simplicity and better compatibility with some models.
+  const fullPrompt = `You are a market research analyst AI. Perform a comprehensive market and trend analysis for the given domain name.
 The user is considering this for a project with specific details.
 
 Your research must be deep and cover the following areas:
@@ -99,21 +100,22 @@ Your research must be deep and cover the following areas:
 
 Provide a structured, detailed report with clear headings for each section. Conclude with a final recommendation (e.g., Highly Recommended, Recommended, Consider Alternatives) and a summary of why.
 Format the response using markdown.
-`;
-  const userPrompt = `
-    Analyze the domain: "${data.domainSuggestion}"
+
+---
+
+Analyze the domain: "${data.domainSuggestion}"
     
-    The project details are:
-    - Project/Business Name: ${data.projectOrBusinessName}
-    - Niche/Project Type: ${data.businessNicheOrPersonalProjectType}
-    - Target Audience/Location: ${data.targetAudienceOrLocation}
-    - Keywords: ${data.keywordsOrIdeasForDomain}
+The project details are:
+- Project/Business Name: ${data.projectOrBusinessName}
+- Niche/Project Type: ${data.businessNicheOrPersonalProjectType}
+- Target Audience/Location: ${data.targetAudienceOrLocation}
+- Keywords: ${data.keywordsOrIdeasForDomain}
   `;
 
   try {
      const response = await runOpenRouterChat([
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
+      // Using a single user role message for broader compatibility.
+      { role: 'user', content: fullPrompt },
     ], OPENROUTER_ANALYSIS_MODEL);
 
     if (response?.choices?.[0]?.message?.content) {
