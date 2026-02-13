@@ -4,7 +4,7 @@ import type { DomainSuggestionOutput, ExplainDomainSuggestionInput, FormDataType
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_SUGGESTION_MODEL = process.env.OPENROUTER_SUGGESTION_MODEL || 'mistralai/mistral-7b-instruct';
-const OPENROUTER_ANALYSIS_MODEL = process.env.OPENROUTER_ANALYSIS_MODEL || 'anthropic/claude-instant-v1';
+const OPENROUTER_ANALYSIS_MODEL = process.env.OPENROUTER_ANALYSIS_MODEL || 'mistralai/mistral-7b-instruct';
 const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 
 
@@ -86,8 +86,7 @@ You MUST reply with ONLY a valid JSON object that matches this structure: { "sug
 }
 
 export async function getDomainAnalysis(data: ExplainDomainSuggestionInput): Promise<string> {
-   // Combined prompt for simplicity and better compatibility with some models.
-  const fullPrompt = `You are a market research analyst AI. Perform a comprehensive market and trend analysis for the given domain name.
+  const systemPrompt = `You are a market research analyst AI. Perform a comprehensive market and trend analysis for the given domain name.
 The user is considering this for a project with specific details.
 
 Your research must be deep and cover the following areas:
@@ -99,10 +98,9 @@ Your research must be deep and cover the following areas:
 6.  **Social Media Availability:** Comment on the likely availability of handles matching or similar to the domain name on major platforms (Twitter/X, Instagram, Facebook).
 
 Provide a structured, detailed report with clear headings for each section. Conclude with a final recommendation (e.g., Highly Recommended, Recommended, Consider Alternatives) and a summary of why.
-Format the response using markdown.
-
----
-
+Format the response using markdown.`;
+  
+  const userPrompt = `
 Analyze the domain: "${data.domainSuggestion}"
     
 The project details are:
@@ -114,8 +112,8 @@ The project details are:
 
   try {
      const response = await runOpenRouterChat([
-      // Using a single user role message for broader compatibility.
-      { role: 'user', content: fullPrompt },
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
     ], OPENROUTER_ANALYSIS_MODEL);
 
     if (response?.choices?.[0]?.message?.content) {
