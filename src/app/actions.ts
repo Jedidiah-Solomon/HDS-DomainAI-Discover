@@ -4,7 +4,7 @@ import type { DomainSuggestionOutput, ExplainDomainSuggestionInput, FormDataType
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_SUGGESTION_MODEL = process.env.OPENROUTER_SUGGESTION_MODEL || 'mistralai/mistral-7b-instruct';
-const OPENROUTER_ANALYSIS_MODEL = process.env.OPENROUTER_ANALYSIS_MODEL || 'wizardlm/wizardlm-13b-v1.2';
+const OPENROUTER_ANALYSIS_MODEL = process.env.OPENROUTER_ANALYSIS_MODEL || 'mistralai/mistral-7b-instruct';
 const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 
 
@@ -21,6 +21,8 @@ async function runOpenRouterChat(messages: { role: string; content: string }[], 
   if (isJson) {
     body.response_format = { type: 'json_object' };
   }
+  
+  console.log('Sending to OpenRouter:', JSON.stringify(body, null, 2));
 
   const response = await fetch(`${OPENROUTER_API_BASE}/chat/completions`, {
     method: 'POST',

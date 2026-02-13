@@ -51,6 +51,7 @@ export default function ExplanationDialog({
         setStatus('completed');
       })
       .catch((e: Error) => {
+        console.error("Research task failed:", e);
         setStatus('failed');
         setError(e.message || 'An error occurred while starting the research task.');
       });
