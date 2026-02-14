@@ -84,7 +84,7 @@ export default function DomainSearchForm({ onSubmit, loading }: DomainSearchForm
             <FormItem>
               <FormLabel>Project or Business Name</FormLabel>
               <FormControl>
-                <Input placeholder="e.g., Manus AI" {...field} />
+                <Input placeholder="e.g., Hordanso LTD" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
